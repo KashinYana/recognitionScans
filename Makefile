@@ -1,4 +1,4 @@
-CC              := g++
+CC              := g++ -std=c++0x
 CFLAGS          := #-I/usr/include/opencv2 
 OBJECTS         := 
 LIBRARIES       := -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_objdetect

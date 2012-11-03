@@ -11,14 +11,14 @@ int main(int argc, char* argv[])
     char filename[] = "scan.jpg";
     IplImage* image = cvLoadImage(filename, CV_LOAD_IMAGE_GRAYSCALE);
     assert(image != NULL);
-    cv::Mat mtx(image);
+    cv::Mat matrix(image);
 
     cvNamedWindow("image");
     cvShowImage("image", image);
 
-    Thresholding hold(mtx, 5);
+    Thresholding hold(matrix, 10);
 
-    cv::Mat whiteBlackImage = hold.transformation(255, 0);
+    cv::Mat whiteBlackImage = hold.transformation();
 
     cvNamedWindow("whiteBlackImage");
     IplImage img ((IplImage)whiteBlackImage);

@@ -8,19 +8,22 @@
 
 int main(int argc, char* argv[])
 {
-    char filename[] = "Image0.jpg";
+    char filename[] = "scan.jpg";
     IplImage* image = cvLoadImage(filename, CV_LOAD_IMAGE_GRAYSCALE);
+    assert(image != NULL);
     cv::Mat mtx(image);
 
     cvNamedWindow("image");
     cvShowImage("image", image);
 
-    Thresholding hold(mtx);
+    Thresholding hold(mtx, 5);
 
-    cv::Mat whiteBlackImage = hold.transformation(245, 30);
+    cv::Mat whiteBlackImage = hold.transformation(255, 0);
+
     cvNamedWindow("whiteBlackImage");
     IplImage img ((IplImage)whiteBlackImage);
     cvShowImage("whiteBlackImage", &img);
+
 
     // ждём нажатия клавиши
     cvWaitKey(0);

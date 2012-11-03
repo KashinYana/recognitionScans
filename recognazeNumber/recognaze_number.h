@@ -38,14 +38,17 @@ class Number
 private:
     std::vector<Line> lines;
     cv::Mat picture;
-    std::vector<bool> needLine;
+    std::vector<bool> necessaryLines;
+    int minValuePixel, maxValuePixel;
 public:
-    Number(const cv::Mat& picture_, const std::vector<int>& numberLines)
+    Number(const cv::Mat& picture_, const std::vector<int>& numberNecessaryLines)
     {
+        minValuePixel = 0;
+        maxValuePixel = 255;
         picture = picture_;
         add_lines();
-        needLine.resize(lines.size());
-        add_need_lines(numberLines);
+        necessaryLines.resize(lines.size());
+        mark_necessary_lines(numberNecessaryLines);
     }
     void add_lines()
     {
@@ -55,15 +58,15 @@ public:
         lines.push_back(Line(Point(picture.rows - 1, 0), Point(picture.rows - 1, picture.cols)));
         lines.push_back(Line(Point(picture.rows / 2, 0), Point(picture.rows, 0)));
         lines.push_back(Line(Point(0, 0), Point(picture.rows / 2, 0)));
-        lines.push_back(Line(Point(0, picture.cols), Point(picture.rows / 2, 0)));
+        lines.push_back(Line(Point(0, picture.cols - 1), Point(picture.rows / 2, 0)));
         lines.push_back(Line(Point(picture.rows / 2, 0), Point(picture.rows / 2, picture.cols)));
-        lines.push_back(Line(Point(picture.rows / 2, picture.cols), Point(picture.rows, 0)));
+        lines.push_back(Line(Point(picture.rows / 2, picture.cols - 1), Point(picture.rows, 0)));
     }
-    void add_need_lines(const std::vector<int>& numberLines)
+    void mark_necessary_lines(const std::vector<int>& numberLines)
     {
         for(int i = 0; i < numberLines.size(); i++)
         {
-            needLine[numberLines[i]] = true;
+            necessaryLines[numberLines[i]] = true;
         }
     }
     double similarity()
@@ -114,8 +117,8 @@ public:
 private:
     bool isGoodPixel(int x, int y, int numberLine) const
     {
-        return (picture.at<cv::Vec3b>(x, y)[0] == 0 && needLine[numberLine])
-                ||(picture.at<cv::Vec3b>(x, y)[0] == 255 && !needLine[numberLine]);
+        return (picture.at<cv::Vec3b>(x, y)[0] == minValuePixel && necessaryLines[numberLine])
+                ||(picture.at<cv::Vec3b>(x, y)[0] == maxValuePixel && !necessaryLines[numberLine]);
     }
 };
 
@@ -163,12 +166,12 @@ std::vector<int> linesNumber(int number)
     }
 }
 
-int recongaze(const cv::Mat& matrix)
+int recongaze(const cv::Mat& picture)
 {
     std::vector<std::pair<double, int> > result;
     for(int i = 0; i <= 9; i++)
     {
-        result.push_back(std::make_pair(Number(matrix, linesNumber(i)).similarity(), i));
+        result.push_back(std::make_pair(Number(picture, linesNumber(i)).similarity(), i));
     }
     std::sort(result.begin(), result.end());
     return result.back().second;

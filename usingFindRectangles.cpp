@@ -27,13 +27,8 @@ int main(int argc, char* argv[])
 
     cvShowImage("whiteBlackImage", &img);
 
-    // ждём нажатия клавиши
     cvWaitKey(0);
-
-    // освобождаем ресурсы
     cvReleaseImage(&image);
-
-    // удаляем окна
     cvDestroyAllWindows();
 
     return 0;

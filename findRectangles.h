@@ -6,9 +6,6 @@
 
 #include <utility>
 #include <vector>
-#include <stdlib.h>
-#include <stdio.h>
-
 
 class FindRectangles
 {
@@ -40,9 +37,11 @@ public:
             {
                 if(goodColor(i, j) && free(i, j))
                 {
-                    std::pair<int, int> angle(i, j);
-                    dfs(i, j, angle);
-                    answer.push_back(cv::Rect_<int>(j, i, angle.second - j, angle.first - i));
+                    std::pair<int, int> rightDownAngle(i, j);
+                    std::pair<int, int> leftUpAngle(i, j);
+                    dfs(i, j, leftUpAngle, rightDownAngle);
+                    answer.push_back(cv::Rect_<int>(leftUpAngle.second, leftUpAngle.first,
+                                                     rightDownAngle.second - leftUpAngle.second, rightDownAngle.first - leftUpAngle.first));
                 }
             }
         }
@@ -76,11 +75,15 @@ private:
     cv::Mat mark;
     int red, green, blue;
 
-    void dfs(int i, int j, std::pair<int, int>& angle)
+    void dfs(int i, int j, std::pair<int, int>& leftUpAngle, std::pair<int, int>& ringhtDownAngle)
     {
-        if(i + j > angle.first + angle.second)
+        if(i + j > ringhtDownAngle.first + ringhtDownAngle.second)
         {
-            angle = std::make_pair(i, j);
+            ringhtDownAngle = std::make_pair(i, j);
+        }
+        if(i + j < leftUpAngle.first + leftUpAngle.second)
+        {
+            leftUpAngle = std::make_pair(i, j);
         }
         for(int numberColor = 0; numberColor < 3; numberColor++)
         {
@@ -92,7 +95,7 @@ private:
             {
                 if(inTable(i + deltaX, j + deltaY) && goodColor(i + deltaX, j + deltaY) && free(i + deltaX, j + deltaY))
                 {
-                    dfs(i + deltaX, j + deltaY, angle);
+                    dfs(i + deltaX, j + deltaY, leftUpAngle, ringhtDownAngle);
                 }
             }
         }

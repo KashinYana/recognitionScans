@@ -1,11 +1,11 @@
-#ifndef RECOGNAZE_NUMBER_H_INCLUDED
-#define RECOGNAZE_NUMBER_H_INCLUDED
+#ifndef RECOGNIZE_NUMBER_H_INCLUDED
+#define RECOGNIZE_NUMBER_H_INCLUDED
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
 
-namespace recongazeNumber{
+namespace recongizeNumber{
 
 class Point
 {
@@ -166,7 +166,7 @@ std::vector<int> linesNumber(int number)
     }
 }
 
-int recongaze(const cv::Mat& picture)
+int recongize(const cv::Mat& picture)
 {
     std::vector<std::pair<double, int> > result;
     for(int i = 0; i <= 9; i++)
@@ -178,4 +178,4 @@ int recongaze(const cv::Mat& picture)
 }
 } //end namespace
 
-#endif // RECOGNAZE_NUMBER_H_INCLUDED
+#endif // RECOGNIZE_NUMBER_H_INCLUDED

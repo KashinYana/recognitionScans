@@ -6,6 +6,8 @@
 
 #include <utility>
 #include <vector>
+#include <stdio.h>
+#include <stdlib.h>
 
 class FindRectangles
 {

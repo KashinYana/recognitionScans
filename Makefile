@@ -17,5 +17,9 @@ white:
 	$(CC) $(CFLAGS) -o white_black white_black.cpp $(LIBRARIES)     
 hold:
 	$(CC) $(CFLAGS) -o usingTresholding usingTresholding.cpp $(LIBRARIES)         
+
+
+find:
+	$(CC) $(CFLAGS) -o usingFindRectangles usingFindRectangles.cpp $(LIBRARIES) 
 clean:
 	rm -f *.o

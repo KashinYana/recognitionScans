@@ -1,6 +1,7 @@
 #ifndef __CONFIG_HPP__
 #define __CONFIG_HPP__
 
+#include "../util/util.hpp"
 #include "parse_exception.hpp"
 #include <string>
 #include <map>
@@ -26,7 +27,7 @@ class Config {
 					{
 					}
 					public:
-					typedef std::multimap<std::string, std::string> iterator;
+					typedef std::multimap<std::string, std::string>::iterator iterator;
 					std::multimap<std::string, std::string>::iterator begin() {
 						return section.properties.lower_bound(valueName);
 					}
@@ -71,8 +72,9 @@ class Config {
 				friend class Config;
 				Config& config;
 				std::string sectionName;
-				ConfigSlice(Config cfg, const std::string& _sectionName): config(cfg), sectionName(_sectionName) {}
+				ConfigSlice(Config& cfg, const std::string& _sectionName): config(cfg), sectionName(_sectionName) {}
 			public:
+				typedef std::multimap<std::string, Section>::iterator iterator;
 				iterator begin() {
 					return config.sections.lower_bound(sectionName);
 				}
@@ -91,33 +93,21 @@ class Config {
 				}
 				Section& operator[] (int index) {
 					if (index < 0) {
-						throw std::illegal_argument("negative array index");
+						throw std::invalid_argument("negative array index");
 					}
 					iterator it = begin();
 					iterator _end = end();
 					for (int i = 0; i < index; i ++) {
 						it ++;
 						if (it == _end) {
-							throw std::illegal_argument("array index out of bounds");
+							throw std::invalid_argument("array index out of bounds");
 						}
 					}
-					return *it;
+					return it->second;
 				}
-		}
+		};
 	public:
-		typedef std::multimap<std::string, std::string>::iterator iterator;
-		static std::string strip(const std::string& value) {
-			int firstMeaningLetter = 0;
-			int lastMeaningLetter = value.size() - 1;
-			while (firstMeaningLetter < value.size() && isspace(value[firstMeaningLetter])) 
-
-				lastMeaningLetter --;
-			std::string result = "";
-			for (int i = firstMeaningLetter; i <= lastMeaningLetter; i ++)
-				result += value[i];
-			return result;
-		}
-		typedef std::map<std::string, Section>::iterator iterator;
+		typedef std::multimap<std::string, Section>::iterator iterator;
 
 		iterator begin() 
 		{
@@ -129,13 +119,12 @@ class Config {
 			return sections.end();
 		}
 
-		Config() {
+		void add(const std::string& sectionName, Section section) {
+			sections.insert(std::make_pair(sectionName, section));
+			sectionNames.insert(sectionName);
 		}
 
-		void add(const std::string& sectionName, const std::string& key, const std::string& value)
-		{
-			sections[sectionName].add(key, value);
-			sectionNames.insert(sectionName);
+		Config() {
 		}
 
 		static Config parse(const std::string& fileName)
@@ -147,6 +136,7 @@ class Config {
 				throw std::invalid_argument("Failed to parse config: failed to read file " + fileName + ".");
 			}
 			std::string sectionName = "";
+			Section currentSection;
 			while (fin) 
 			{
 				std::string currentString;
@@ -157,6 +147,8 @@ class Config {
 				} 
 				else if (currentString.size() >= 2 && currentString[0] == '[' && currentString[currentString.size() - 1] == ']')  
 				{
+					result.sections.insert(std::make_pair(sectionName, currentSection));
+					currentSection = Section();			
 					sectionName = currentString.substr(1, currentString.size() - 2);
 				}
 				else
@@ -166,18 +158,19 @@ class Config {
 					{
 						throw ParseException("Failed to parse " + fileName + ": " + currentString + " is incorrect");
 					}
-					std::string key = strip(currentString.substr(0, firstDelim));
-					std::string value = strip(currentString.substr(firstDelim + 1, currentString.size() - firstDelim - 1));
-					result.add(sectionName, key, value);
+					std::string key = util::strip(currentString.substr(0, firstDelim));
+					std::string value = util::strip(currentString.substr(firstDelim + 1, currentString.size() - firstDelim - 1));
+					currentSection.add(key, value);
 				}
 			}
+			result.sections.insert(std::make_pair(sectionName, currentSection));					
 			fin.close();
 			return result;
 		}
 		
-		Section& operator [] (const std::string& value)
+		ConfigSlice operator [] (const std::string& value) 
 		{
-			return sections[value];
+			return ConfigSlice(*this, value);
 		}
 };
 

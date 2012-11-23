@@ -64,15 +64,53 @@ class Config {
 				}
 		};
 	private:
-		std::map<std::string, Section> sections;
+		std::multimap<std::string, Section> sections;
 		std::set<std::string> sectionNames;
+		class ConfigSlice { 
+			private:
+				friend class Config;
+				Config& config;
+				std::string sectionName;
+				ConfigSlice(Config cfg, const std::string& _sectionName): config(cfg), sectionName(_sectionName) {}
+			public:
+				iterator begin() {
+					return config.sections.lower_bound(sectionName);
+				}
+				iterator end() {
+					return config.sections.upper_bound(sectionName);
+				}
+				unsigned int size() { 
+					iterator it = begin();
+					iterator to = end();
+					unsigned int result = 0;
+					while (it != to) {
+						result ++;
+						it ++;
+					}
+					return result;
+				}
+				Section& operator[] (int index) {
+					if (index < 0) {
+						throw std::illegal_argument("negative array index");
+					}
+					iterator it = begin();
+					iterator _end = end();
+					for (int i = 0; i < index; i ++) {
+						it ++;
+						if (it == _end) {
+							throw std::illegal_argument("array index out of bounds");
+						}
+					}
+					return *it;
+				}
+		}
 	public:
+		typedef std::multimap<std::string, std::string>::iterator iterator;
 		static std::string strip(const std::string& value) {
 			int firstMeaningLetter = 0;
 			int lastMeaningLetter = value.size() - 1;
 			while (firstMeaningLetter < value.size() && isspace(value[firstMeaningLetter])) 
-				firstMeaningLetter ++;
-			while (lastMeaningLetter >= firstMeaningLetter && isspace(value[lastMeaningLetter]))
+
 				lastMeaningLetter --;
 			std::string result = "";
 			for (int i = firstMeaningLetter; i <= lastMeaningLetter; i ++)

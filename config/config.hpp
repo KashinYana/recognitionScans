@@ -1,6 +1,7 @@
 #ifndef __CONFIG_HPP__
 #define __CONFIG_HPP__
 
+#include "../util/util.hpp"
 #include "parse_exception.hpp"
 #include <string>
 #include <map>
@@ -26,12 +27,40 @@ class Config {
 					{
 					}
 					public:
-					typedef std::multimap<std::string, std::string> iterator;
-					std::multimap<std::string, std::string>::iterator begin() {
-						return section.properties.lower_bound(valueName);
+					class iterator {
+						friend class SectionSlice;
+						private:
+							std::multimap<std::string, std::string>::iterator it;						
+							explicit iterator(std::multimap<std::string, std::string>::iterator _it): it(_it) {
+							}
+						public:
+							iterator() {
+							}
+							iterator& operator ++ () {
+								it ++;
+								return *this;
+							}
+							iterator& operator ++ (int) {
+								it ++;
+								return *this;
+							}
+							iterator& operator -- () {
+								it --;
+								return *this;
+							}
+							iterator& operator -- (int) {
+								it --;
+								return *this;
+							}
+							bool operator == (const iterator& rhs) { return this->it == rhs.it; }
+							bool operator != (const iterator& rhs) { return this->it != rhs.it; }
+							std::string& operator * () { return it->second; }
+					};
+					iterator begin() {
+						return iterator(section.properties.lower_bound(valueName));
 					}
-					std::multimap<std::string, std::string>::iterator end() {
-						return section.properties.upper_bound(valueName);
+					iterator end() {
+						return iterator(section.properties.upper_bound(valueName));
 					}
 					unsigned int size() { 
 						iterator it = begin();
@@ -71,13 +100,43 @@ class Config {
 				friend class Config;
 				Config& config;
 				std::string sectionName;
-				ConfigSlice(Config cfg, const std::string& _sectionName): config(cfg), sectionName(_sectionName) {}
+				ConfigSlice(Config& cfg, const std::string& _sectionName): config(cfg), sectionName(_sectionName) {}
 			public:
+				class iterator {
+					friend class ConfigSlice;
+					private:
+						std::multimap<std::string, Section>::iterator it;						
+						explicit iterator(std::multimap<std::string, Section>::iterator _it): it(_it) {
+						}
+					public:
+						iterator() {
+						}
+						iterator& operator ++ () {
+							it ++;
+							return *this;
+						}
+						iterator& operator ++ (int) {
+							it ++;
+							return *this;
+						}
+						iterator& operator -- () {
+							it --;
+							return *this;
+						}
+						iterator& operator -- (int) {
+							it --;
+							return *this;
+						}
+						bool operator == (const iterator& rhs) { return this->it == rhs.it; }
+						bool operator != (const iterator& rhs) { return this->it != rhs.it; }
+						Section& operator * () { return it->second; }
+				};
+//				typedef std::multimap<std::string, Section>::iterator iterator;
 				iterator begin() {
-					return config.sections.lower_bound(sectionName);
+					return iterator(config.sections.lower_bound(sectionName));						
 				}
 				iterator end() {
-					return config.sections.upper_bound(sectionName);
+					return iterator(config.sections.upper_bound(sectionName));
 				}
 				unsigned int size() { 
 					iterator it = begin();
@@ -91,33 +150,22 @@ class Config {
 				}
 				Section& operator[] (int index) {
 					if (index < 0) {
-						throw std::illegal_argument("negative array index");
+						throw std::invalid_argument("negative array index");
 					}
 					iterator it = begin();
 					iterator _end = end();
 					for (int i = 0; i < index; i ++) {
 						it ++;
 						if (it == _end) {
-							throw std::illegal_argument("array index out of bounds");
+							throw std::invalid_argument("array index out of bounds");
 						}
 					}
 					return *it;
 				}
-		}
+		};
 	public:
-		typedef std::multimap<std::string, std::string>::iterator iterator;
-		static std::string strip(const std::string& value) {
-			int firstMeaningLetter = 0;
-			int lastMeaningLetter = value.size() - 1;
-			while (firstMeaningLetter < value.size() && isspace(value[firstMeaningLetter])) 
-
-				lastMeaningLetter --;
-			std::string result = "";
-			for (int i = firstMeaningLetter; i <= lastMeaningLetter; i ++)
-				result += value[i];
-			return result;
-		}
-		typedef std::map<std::string, Section>::iterator iterator;
+		typedef std::multimap<std::string, Section>::iterator iterator;
+		typedef ConfigSlice::iterator slice_iterator;
 
 		iterator begin() 
 		{
@@ -129,13 +177,12 @@ class Config {
 			return sections.end();
 		}
 
-		Config() {
+		void add(const std::string& sectionName, Section section) {
+			sections.insert(std::make_pair(sectionName, section));
+			sectionNames.insert(sectionName);
 		}
 
-		void add(const std::string& sectionName, const std::string& key, const std::string& value)
-		{
-			sections[sectionName].add(key, value);
-			sectionNames.insert(sectionName);
+		Config() {
 		}
 
 		static Config parse(const std::string& fileName)
@@ -147,6 +194,7 @@ class Config {
 				throw std::invalid_argument("Failed to parse config: failed to read file " + fileName + ".");
 			}
 			std::string sectionName = "";
+			Section currentSection;
 			while (fin) 
 			{
 				std::string currentString;
@@ -157,6 +205,8 @@ class Config {
 				} 
 				else if (currentString.size() >= 2 && currentString[0] == '[' && currentString[currentString.size() - 1] == ']')  
 				{
+					result.sections.insert(std::make_pair(sectionName, currentSection));
+					currentSection = Section();			
 					sectionName = currentString.substr(1, currentString.size() - 2);
 				}
 				else
@@ -166,18 +216,19 @@ class Config {
 					{
 						throw ParseException("Failed to parse " + fileName + ": " + currentString + " is incorrect");
 					}
-					std::string key = strip(currentString.substr(0, firstDelim));
-					std::string value = strip(currentString.substr(firstDelim + 1, currentString.size() - firstDelim - 1));
-					result.add(sectionName, key, value);
+					std::string key = util::strip(currentString.substr(0, firstDelim));
+					std::string value = util::strip(currentString.substr(firstDelim + 1, currentString.size() - firstDelim - 1));
+					currentSection.add(key, value);
 				}
 			}
+			result.sections.insert(std::make_pair(sectionName, currentSection));					
 			fin.close();
 			return result;
 		}
 		
-		Section& operator [] (const std::string& value)
+		ConfigSlice operator [] (const std::string& value) 
 		{
-			return sections[value];
+			return ConfigSlice(*this, value);
 		}
 };
 

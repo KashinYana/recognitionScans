@@ -12,7 +12,7 @@ class ParseException: public std::exception
 		{
 			return message.c_str();
 		}
-		virtual ~ParseException() 
+		virtual ~ParseException() throw() 
 		{
 		}
 	private:

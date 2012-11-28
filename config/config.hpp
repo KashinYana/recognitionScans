@@ -80,7 +80,7 @@ class Config {
 					propertyNames.insert(key);
 				}
 				typedef std::multimap<std::string, std::string>::iterator iterator;
-				iterator begin() 
+				iterator begin()
 				{
 					return properties.begin();
 				}
@@ -230,6 +230,31 @@ class Config {
 		{
 			return ConfigSlice(*this, value);
 		}
+		
+		void write(const std::string& fileName) {
+			std::ofstream fout(fileName.c_str(), std::ofstream::out);
+			bool haveToPrintEoln = false;
+			for (Section section: ConfigSlice(*this, "")) {
+				for (Section::iterator it = section.begin(); it != section.end(); it ++) {
+					fout << it->first << "=" << it->second << std::endl;
+					haveToPrintEoln = true;
+				}
+			}
+			for (iterator it = begin(); it != end(); it ++) {
+				if (it->first != "") {
+					if (haveToPrintEoln) {
+						fout << std::endl;
+					}
+					haveToPrintEoln = true;
+					fout << "[" << it->first << "]" << std::endl;
+					for (Section::iterator iter = it->second.begin(); iter != it->second.end(); iter ++) {
+						fout << iter->first << "=" << iter->second << std::endl;
+					}
+				}
+			}
+			fout.close();
+		}
+
 };
 
 #endif // __CONFIG_HPP__

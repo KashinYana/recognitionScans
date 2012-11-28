@@ -15,10 +15,9 @@ int main(int argc, char* argv[])
 			std::cout << "section1.value1 = " << property << std::endl;
 		}
 	}
-//	for (Config::iterator it = config.begin(); it != config.end(); it++) 
-//	{
-//		std::cout << "section " << it->first << std::endl;
-//		for (Config::Section::iterator it2 = it->second.begin(); it2 != it->second.end(); it2 ++)
-//			std::cout << "    " << it->first << "." << it2->first << "="  << it2->second << std::endl;
-//	}	
+	Config::Section section;
+	section.add("x", util::IntToStr(1));
+	section.add("y", util::IntToStr(1));
+	config.add("section", section);
+	config.write("updated.cfg");
 }

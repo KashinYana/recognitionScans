@@ -48,22 +48,6 @@ public:
         return answer;
     }
 
-    cv::Mat wrireNumbers(const std::vector<cv::Rect_<int> >& rectangles, cv::Scalar colorRectangles = CV_RGB(255, 0, 0),
-                         cv::Scalar colorText = CV_RGB(255, 0, 0))
-    {
-        cv::Mat answer;
-        picture.copyTo(answer);
-        for(int i = 0; i < rectangles.size(); i++)
-        {
-           cv::rectangle(answer, rectangles[i], colorRectangles, 2);
-           char name[maxSize];
-           sprintf(name, "%d", i);
-           cv::putText(answer, std::string(name), cvPoint(rectangles[i].x, rectangles[i].y + rectangles[i].height/2),
-                        cv::FONT_HERSHEY_COMPLEX, 1, colorText, 2);
-        }
-        return answer;
-    }
-
 private:
 
     const int maxValueColor;
@@ -116,6 +100,33 @@ private:
     {
         return mark.at<cv::Vec3b>(i, j)[0] == minValueColor;
     }
+};
+
+class DrawRectangles {
+public:
+    DrawRectangles(cv::Mat matrix)
+    {
+        matrix.copyTo(picture);
+    }
+
+    cv::Mat draw(const std::vector<cv::Rect_<int> >& rectangles, cv::Scalar colorRectangles = CV_RGB(255, 0, 0),
+                         cv::Scalar colorText = CV_RGB(255, 0, 0))
+    {
+        cv::Mat answer;
+        picture.copyTo(answer);
+        for(int i = 0; i < rectangles.size(); i++)
+        {
+           cv::rectangle(answer, rectangles[i], colorRectangles, 2);
+           char name[maxSize];
+           sprintf(name, "%d", i);
+           cv::putText(answer, std::string(name), cvPoint(rectangles[i].x, rectangles[i].y + rectangles[i].height/2),
+                        cv::FONT_HERSHEY_COMPLEX, 1, colorText, 2);
+        }
+        return answer;
+    }
+private:
+    cv::Mat picture;
+    static const int maxSize = 200;
 };
 
 #endif // FINDRECTANGLES_H_INCLUDED

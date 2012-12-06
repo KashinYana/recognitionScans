@@ -23,5 +23,19 @@ int main(int argc, char* argv[])
         }
         cvReleaseImage(&image);
     }
+
+    IplImage* image = cvLoadImage("Image0.jpg");
+    assert(image != NULL);
+    cv::Mat mtx(image);
+    recongizeNumber::ClearTrash clearTrash(mtx, 50);
+    cv::Mat newMtx(clearTrash.clear());
+    IplImage newPicture((IplImage)newMtx);
+    cvNamedWindow("image");
+    cvShowImage("image", &newPicture);
+
+    cvWaitKey(0);
+    cvReleaseImage(&image);
+    cvDestroyAllWindows();
+
     return 0;
 }

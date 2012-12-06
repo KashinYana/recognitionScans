@@ -3,9 +3,47 @@
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include "../findRectangles/findRectangles.h"
 
+namespace recongizeNumber{
 
-namespace recongIzeNumber{
+class ClearTrash {
+public:
+    explicit ClearTrash(const cv::Mat& picture_, int radius_ = 10):
+    picture(picture_), radius(radius_), minValue(0), maxValue(255)
+    {
+
+    }
+    cv::Mat clear()
+    {
+        cv::Mat answer(picture);
+        FindRectangles find(picture, minValue, minValue, minValue); //black
+        std::vector<cv::Rect_<int> > rectangles = find.find();
+        for(int i = 0; i < rectangles.size(); i++)
+        {
+            if(rectangles[i].width < radius && rectangles[i].height < radius)
+            {
+                for(int x = rectangles[i].x; x <= rectangles[i].x + rectangles[i].width; x++)
+                {
+                    for(int y = rectangles[i].y; y <= rectangles[i].y + rectangles[i].height; y++)
+                    {
+                        for(int k = 0; k < 3; k++)
+                        {
+                            answer.at<cv::Vec3b>(y, x)[k] = maxValue;
+                        }
+                    }
+                }
+            }
+        }
+        return answer;
+    }
+private:
+    const cv::Mat& picture;
+    int radius;
+    const int minValue;
+    const int maxValue;
+};
+
 
 class Point
 {

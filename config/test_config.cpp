@@ -15,6 +15,8 @@ int main(int argc, char* argv[])
 			std::cout << "section1.value1 = " << property << std::endl;
 		}
 	}
+	std::cout << config.getSection("section1").getProperty("value1") << std::endl;
+	std::cout << config.getSection("section2").getProperty("value3") << std::endl;
 	Config::Section section;
 	section.add("x", util::IntToStr(1));
 	section.add("y", util::IntToStr(1));

@@ -5,7 +5,10 @@ LIBRARIES       := -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_objd
 
 .PHONY: all clean
 
-all: test
+all: main
+
+main:
+	$(CC) $(CFLAGS) -o main.exe main.cpp $(LIBRARIES)
 
 test: 
 	$(CC) $(CFLAGS) -o open open.cpp $(LIBRARIES)

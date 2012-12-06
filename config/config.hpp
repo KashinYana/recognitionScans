@@ -74,12 +74,26 @@ class Config {
 					}
 				};
 			public:
+				typedef std::multimap<std::string, std::string>::iterator iterator;
+				std::string& getProperty(const std::string& valueName) {
+					iterator beginIt = properties.lower_bound(valueName);					
+					iterator endIt = properties.upper_bound(valueName);					
+					if (beginIt == endIt) {
+						throw std::range_error("No such property " + valueName);
+					}
+					iterator it = beginIt;
+					it ++;
+					if (it != endIt) {
+						std::cerr << "WARNING: Multiply possible values for property \"" + valueName << "\"" << std::endl;
+						//ToDo: logger
+					}
+					return beginIt->second;
+				}
 				void add(const std::string& key, const std::string& value)
 				{
 					properties.insert(make_pair(key, value));
 					propertyNames.insert(key);
 				}
-				typedef std::multimap<std::string, std::string>::iterator iterator;
 				iterator begin()
 				{
 					return properties.begin();
@@ -229,6 +243,20 @@ class Config {
 		ConfigSlice operator [] (const std::string& value) 
 		{
 			return ConfigSlice(*this, value);
+		}
+
+		Section& getSection(const std::string& sectionName) {
+			iterator beginIt = sections.lower_bound(sectionName);
+			iterator endIt = sections.upper_bound(sectionName);
+			if (beginIt == endIt) {
+				throw std::range_error("No such section " + sectionName);				
+			}
+			iterator it = beginIt;
+			it ++;
+			if (it != endIt) {
+				std::cerr << "WARNING: Multiply sections with name \"" + sectionName << "\"" << std::endl;
+			}
+			return beginIt->second;
 		}
 		
 		void write(const std::string& fileName) {

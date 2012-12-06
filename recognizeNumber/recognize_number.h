@@ -87,18 +87,29 @@ public:
         add_lines();
         necessaryLines.resize(lines.size());
         mark_necessary_lines(numberNecessaryLines);
+        correct_lines(20);
     }
     void add_lines()
     {
-        lines.push_back(Line(Point(0, 0), Point(0, picture.cols)));
+        lines.push_back(Line(Point(0, 0), Point(0, picture.cols - 1)));
         lines.push_back(Line(Point(0, picture.cols - 1), Point(picture.rows / 2, picture.cols - 1)));
-        lines.push_back(Line(Point(picture.rows / 2, picture.cols - 1), Point(picture.rows, picture.cols - 1)));
-        lines.push_back(Line(Point(picture.rows - 1, 0), Point(picture.rows - 1, picture.cols)));
-        lines.push_back(Line(Point(picture.rows / 2, 0), Point(picture.rows, 0)));
+        lines.push_back(Line(Point(picture.rows / 2, picture.cols - 1), Point(picture.rows - 1, picture.cols - 1)));
+        lines.push_back(Line(Point(picture.rows - 1, 0), Point(picture.rows - 1, picture.cols - 1)));
+        lines.push_back(Line(Point(picture.rows / 2, 0), Point(picture.rows - 1, 0)));
         lines.push_back(Line(Point(0, 0), Point(picture.rows / 2, 0)));
         lines.push_back(Line(Point(0, picture.cols - 1), Point(picture.rows / 2, 0)));
-        lines.push_back(Line(Point(picture.rows / 2, 0), Point(picture.rows / 2, picture.cols)));
-        lines.push_back(Line(Point(picture.rows / 2, picture.cols - 1), Point(picture.rows, 0)));
+        lines.push_back(Line(Point(picture.rows / 2, 0), Point(picture.rows / 2, picture.cols - 1)));
+        lines.push_back(Line(Point(picture.rows / 2, picture.cols - 1), Point(picture.rows - 1, 0)));
+    }
+    void add_dabate_angles(std::vector<Point>& debateAngles)
+    {
+        debateAngles.push_back(Point(0, 0));
+        debateAngles.push_back(Point(0, picture.cols - 1));
+        debateAngles.push_back(Point(picture.rows / 2, 0));
+        debateAngles.push_back(Point(picture.rows / 2, picture.cols - 1));
+        debateAngles.push_back(Point(picture.rows - 1, 0));
+        debateAngles.push_back(Point(picture.rows - 1, picture.cols - 1));
+
     }
     void mark_necessary_lines(const std::vector<int>& numberLines)
     {
@@ -106,6 +117,63 @@ public:
         {
             necessaryLines[numberLines[i]] = true;
         }
+    }
+    void correct_lines(int delta)
+    {
+        std::vector<Point> debateAlgles;
+        add_dabate_angles(debateAlgles);
+        std::vector<int> markDebateAlgles(debateAlgles.size());
+        for(int i = 0; i < lines.size(); i++)
+        {
+            if(necessaryLines[i])
+            {
+                for(int j = 0; j < debateAlgles.size(); j++)
+                {
+                    if(cross(debateAlgles[j], delta, lines[i].first) ||
+                       cross(debateAlgles[j], delta, lines[i].second))
+                    {
+                        markDebateAlgles[j] = 1;
+                    }
+                }
+            }
+        }
+        for(int i = 0; i < lines.size(); i++)
+        {
+            if(!necessaryLines[i])
+            {
+                for(int j = 0; j < debateAlgles.size(); j++)
+                {
+                    if(markDebateAlgles[j] == 1 && cross(debateAlgles[j], delta, lines[i].first))
+                    {
+                        if(lines[i].first.x == lines[i].second.x)
+                            lines[i].first.y += delta;
+                        else if(lines[i].first.y == lines[i].second.y)
+                            lines[i].first.x += delta;
+                        else
+                        {
+                            lines[i].first.y -= delta;
+                            lines[i].first.x += delta;
+                        }
+                    }
+                    if(markDebateAlgles[j] == 1 && cross(debateAlgles[j], delta, lines[i].second))
+                    {
+                        if(lines[i].first.x == lines[i].second.x)
+                            lines[i].second.y -= delta;
+                        else if(lines[i].first.y == lines[i].second.y)
+                            lines[i].second.x -= delta;
+                        else
+                        {
+                            lines[i].second.x -= delta;
+                            lines[i].second.y += delta;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    bool cross(const Point& pointCenter, int delta, const Point& point)
+    {
+        return std::max(abs(point.x - pointCenter.x), abs(point.y - pointCenter.y)) <= delta;
     }
     double similarity()
     {
@@ -141,9 +209,17 @@ public:
             {
                 for(int x = lines[i].first.x; x < lines[i].second.x; x++)
                 {
-                    int y = lines[i].first.y - (x - lines[i].first.x);
+                    int lenghtX = abs(lines[i].first.x - lines[i].second.x) / 2;
+                    int lenghtY = abs(lines[i].first.y - lines[i].second.y);
+
+                    int y = (double)lenghtY / (double)lenghtX * (double)(lines[i].second.x - x);
+                    //if(x == 400) {
+                    //    std::cout << "400: x; y = " << y << " " << (int)picture.at<cv::Vec3b>(x, y)[1]<< " bool " << isGoodPixel(x, y, i) << std::endl;
+                    //    std::cout << lenghtX << " " << lenghtY << " " << lines[i].second.x - x <<std::endl;
+                   // }
                     if(isGoodPixel(x, y, i))
                     {
+                        //std::cout << "x = " << x << " y = " << y << std::endl;
                         sumGoodPixels++;
                     }
                     allPixels++;
@@ -155,8 +231,8 @@ public:
 private:
     bool isGoodPixel(int x, int y, int numberLine) const
     {
-        return (picture.at<cv::Vec3b>(x, y)[0] == minValuePixel && necessaryLines[numberLine])
-                ||(picture.at<cv::Vec3b>(x, y)[0] == maxValuePixel && !necessaryLines[numberLine]);
+        return (picture.at<cv::Vec3b>(x, y)[1] == minValuePixel && necessaryLines[numberLine])
+                ||(picture.at<cv::Vec3b>(x, y)[1] == maxValuePixel && !necessaryLines[numberLine]);
     }
 };
 
@@ -176,7 +252,7 @@ std::vector<int> linesNumber(int number)
     }
     else if(number == 3)
     {
-        return {0, 1, 2, 6, 3};
+        return {0, 6, 7, 8};
     }
     else if(number == 4)
     {
@@ -212,6 +288,11 @@ int recongize(const cv::Mat& picture)
         result.push_back(std::make_pair(Number(picture, linesNumber(i)).similarity(), i));
     }
     std::sort(result.begin(), result.end());
+    for(int i = 0; i < result.size(); i++)
+    {
+        std::cout << " ( " << result[i].second << " , " << result[i].first << " ) "<< std::endl;
+    }
+    std::cout << std::endl;
     return result.back().second;
 }
 } //end namespace

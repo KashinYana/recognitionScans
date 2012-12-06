@@ -11,6 +11,7 @@ int main(int argc, char* argv[])
 {
     for(int number = 0; number <= 9; number++)
     {
+        std::cout << "number : " << number << std::endl;
         char filename[100];
         sprintf(filename, "number%d.jpg", number);
         IplImage* image = cvLoadImage(filename, CV_LOAD_IMAGE_GRAYSCALE);
@@ -18,7 +19,7 @@ int main(int argc, char* argv[])
         cv::Mat mtx(image);
         if(number != recongizeNumber::recongize(mtx))
         {
-            std::cerr << "answer"<< number <<" : " << recongizeNumber::recongize(mtx) << std::endl;
+            std::cerr << "Error: correct -> "<< number << " : found -> " << recongizeNumber::recongize(mtx) << std::endl;
             exit(1);
         }
         cvReleaseImage(&image);

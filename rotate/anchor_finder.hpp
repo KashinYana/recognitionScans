@@ -36,7 +36,7 @@ public:
 	AnchorFinder(Config cfg) {
 		config.maxAcceptedPixelDeviation = util::StrToInt(cfg.getSection("anchor_finder").getProperty("max_pixel_deviation"));
 	}
-
+	
 	std::vector<cv::Point> find(cv::Mat image, cv::Mat anchor, int count)	
 	{
 		if (!(anchor.rows <= image.rows && image.cols <= image.cols))

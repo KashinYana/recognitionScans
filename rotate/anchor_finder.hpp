@@ -37,7 +37,7 @@ public:
 		config.maxAcceptedPixelDeviation = util::StrToInt(cfg.getSection("anchor_finder").getProperty("max_pixel_deviation"));
 	}
 
-	std::vector<cv::Point> findAnchor(cv::Mat image, cv::Mat anchor, int count)	
+	std::vector<cv::Point> find(cv::Mat image, cv::Mat anchor, int count)	
 	{
 		if (!(anchor.rows <= image.rows && image.cols <= image.cols))
 			throw std::logic_error("Anchor should be less than image");
@@ -54,7 +54,6 @@ public:
 				throw AnchorNotFoundException("Expected maxDeviation " + util::IntToStr(config.maxAcceptedPixelDeviation) + 
 						" but " + util::IntToStr(average_value) + " got");
 			}
-			std::cerr << result.at<float>(optimalPosition.y, optimalPosition.x) << std::endl;
 			// we found left upper corner, let's find center
 			optimalPosition.x += anchor.cols / 2; 
 			optimalPosition.y += anchor.rows / 2;
@@ -70,8 +69,8 @@ public:
 		return answer;
 	}
 
-	cv::Point findAnchor(cv::Mat image, cv::Mat anchor) {
-		std::vector<cv::Point> result = findAnchor(image, anchor, 1);
+	cv::Point find(cv::Mat image, cv::Mat anchor) {
+		std::vector<cv::Point> result = find(image, anchor, 1);
 		return result[0];
 	}
 };

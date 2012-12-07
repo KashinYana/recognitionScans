@@ -8,10 +8,10 @@
 #include <fstream>
 
 cv::Vec3b RED = cv::Vec3b(0, 0, 255);
-int delta = 15;
+int delta = 5;
 
 int main(int argc, char* argv[]) {
-	Config config = Config::parse("config.cfg");
+	Config config = Config::parse("config_for_finder.cfg");
 	std::string anchorFile = config.getSection("anchor").getProperty("file");
 	if (argc == 1) {
 		std::cerr << "Provide file to scan" << std::endl;
@@ -22,9 +22,11 @@ int main(int argc, char* argv[]) {
 	Image::Image image = Image::readImage(fileToScan);
 	AnchorFinder anchorFinder(config);
 	int anchorCount = util::StrToInt(config.getSection("anchor").getProperty("count"));
-	std::vector<cv::Point> positions = anchorFinder.findAnchor(image, anchor, anchorCount);
+	std::vector<cv::Point> positions = anchorFinder.find(image, anchor, anchorCount);
+	delta = std::max(delta, std::min(image.rows, image.cols) / 100);
+	std::cout << "size = (" << image.rows << ", " << image.cols << ")" << std::endl;
 	for (int k = 0; k < anchorCount; k ++) {
-		std::cout << "Found anchor " << positions[k].x << " " << positions[k].y << std::endl;
+		std::cout << "position = (" << positions[k].x << ", " << positions[k].y << ")" << std::endl;
 		for (int i = -delta; i <= delta; i ++)
 			for (int j = -delta; j <= delta; j ++)
 				image.at<cv::Vec3b>(i + positions[k].y, j + positions[k].x) = RED;

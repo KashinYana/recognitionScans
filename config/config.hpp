@@ -89,6 +89,9 @@ class Config {
 					}
 					return beginIt->second;
 				}
+				bool hasProperty(const std::string& propertyName) const {
+					return propertyNames.find(propertyName) != propertyNames.end();
+				}
 				void add(const std::string& key, const std::string& value)
 				{
 					properties.insert(make_pair(key, value));

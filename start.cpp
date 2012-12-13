@@ -1,8 +1,8 @@
-#include "thresholding/thresholding.hpp"
+#include "tresholding/thresholding.h"
+#include "images/image.hpp"
 #include "findRectangles/findRectangles.h"
 #include "config/config.hpp"
-#include "images/image.hpp"
-
+#include "rotate/anchor_finder.hpp"
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-void writeRectanglesInConfig(const std::vector<cv::Rect_<int> >& rectangles, Config& config, const std::string& nameConfigResult)
+void writeRectanglesInConfig(const std::vector<cv::Rect_<int> >& rectangles, Config& config)
 {
     for(int i = 0; i < rectangles.size(); i++)
     {
@@ -22,19 +22,51 @@ void writeRectanglesInConfig(const std::vector<cv::Rect_<int> >& rectangles, Con
         section.add("height", util::IntToStr(rectangles[i].height));
         config.add("rectangle", section);
     }
-    config.write(nameConfigResult);
 }
 
-std::vector<cv::Rect_<int> > findRectangles(const std::string& fileName, int red, int green, int blue, std::string& namePaintPicture)
+void writePointsInConfig(std::vector<cv::Point>& positions, Config& config)
+{
+    Config::Section section;
+    for(int i = 0; i < positions.size(); i++)
+    {
+        section.add("position", "(" + util::IntToStr(positions[i].x) + ", " + util::IntToStr(positions[i].y) + ")");
+    }
+    config.add("anchor", section);
+}
+
+void writeSizeInConfig(const cv::Mat& matrix, Config& config)
+{
+    Config::Section section;
+    section.add("size", "(" + util::IntToStr(matrix.cols) + ", " + util::IntToStr(matrix.rows) + ")");
+    config.add("model_image", section);
+}
+
+std::vector<cv::Rect_<int> > findRectangles(const std::string& fileName, int red, int green, int blue)
 {
     cv::Mat matrix = Image::read(fileName);
     FindRectangles find(matrix, red, green, blue);
-	Image::show(matrix);
     std::vector<cv::Rect_<int> > rectangles = find.find();
-    DrawRectangles draw(matrix);
-    draw.draw(rectangles).copyTo(matrix);
-    imwrite(namePaintPicture, matrix);
     return rectangles;
+}
+
+std::vector<cv::Point> findPoints(const Config& config, const cv::Mat& image, const cv::Mat& anchor, int anchorCount)
+{
+    std::vector<cv::Point> positions;
+    AnchorFinder anchorFinder(config);
+    positions = anchorFinder.find(image, anchor, anchorCount);
+    return positions;
+}
+
+void drawRectangles(const std::vector<cv::Rect_<int> >& rectangles, cv::Mat& result)
+{
+    DrawRectangles draw(result);
+    draw.draw(rectangles,  CV_RGB(128, 128, 128),  CV_RGB(128, 128, 128)).copyTo(result);  /// подумать о цветах
+}
+
+void drawPoints(const std::vector<cv::Point>& points, cv::Mat& result)
+{
+    DrawPoints draw(result);
+    draw.draw(points,  CV_RGB(128, 128, 128),  CV_RGB(128, 128, 128)).copyTo(result);  /// подумать о цветах
 }
 
 int main()
@@ -82,10 +114,22 @@ int main()
 		}
     }
 
-    std::vector<cv::Rect_<int> > rectangles = findRectangles(original, red, green, blue, namePaintPicture);
-    Config configDataRectangles;
-    writeRectanglesInConfig(rectangles, configDataRectangles, nameConfigResult);
+    cv::Mat matrixOriginal = Image::read(original);
+    cv::Mat matrixAnchors = Image::read(anchors);
+    cv::Mat paintPicture;
+    matrixOriginal.copyTo(paintPicture);
+    Config configFindData;
 
+    std::vector<cv::Rect_<int> > rectangles = findRectangles(original, red, green, blue);
+    drawRectangles(rectangles, paintPicture);
+    writeRectanglesInConfig(rectangles, configFindData);
+    std::vector<cv::Point> positions = findPoints(config, matrixOriginal, matrixAnchors, numberAnchors);
+    writePointsInConfig(positions, configFindData);
+
+    drawPoints(positions, paintPicture);
+    imwrite(namePaintPicture, paintPicture);
+    writeSizeInConfig(matrixOriginal, configFindData);
+    configFindData.write(nameConfigResult);
     IplImage* image = cvLoadImage(namePaintPicture.c_str());
     cvNamedWindow(namePaintPicture.c_str());
     cvShowImage(namePaintPicture.c_str(), image);
@@ -95,6 +139,5 @@ int main()
 
     std::cout << "File \"" + namePaintPicture + " \" contains rectangles, that we found. You can change results in \"" + nameConfigResult + "\"." << std::endl;
     std::cout << "If you change results, don't forget execute \"" + nameRepaintingFile + "\"." << std::endl;
-
     return 0;
 }

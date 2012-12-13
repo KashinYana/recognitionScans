@@ -6,6 +6,18 @@
 
 #include <utility>
 #include <vector>
+#include <queue>
+
+class Position{
+public:
+    int x;
+    int y;
+    Position(int x_, int y_)
+    {
+        x = x_;
+        y = y_;
+    }
+};
 
 class FindRectangles
 {
@@ -39,7 +51,7 @@ public:
                 {
                     std::pair<int, int> rightDownAngle(i, j);
                     std::pair<int, int> leftUpAngle(i, j);
-                    dfs(i, j, leftUpAngle, rightDownAngle);
+                    bfs(i, j, leftUpAngle, rightDownAngle);
                     answer.push_back(cv::Rect_<int>(leftUpAngle.second, leftUpAngle.first,
                                                      rightDownAngle.second - leftUpAngle.second, rightDownAngle.first - leftUpAngle.first));
                 }
@@ -59,29 +71,45 @@ private:
     cv::Mat mark;
     int red, green, blue;
 
-    void dfs(int i, int j, std::pair<int, int>& leftUpAngle, std::pair<int, int>& ringhtDownAngle)
+    void bfs(int i, int j, std::pair<int, int>& leftUpAngle, std::pair<int, int>& ringhtDownAngle)
     {
-        if(i + j > ringhtDownAngle.first + ringhtDownAngle.second)
+        std::queue<Position> queue;
+        queue.push(Position(i, j));
+        into_mark(i, j);
+        while(!queue.empty())
         {
-            ringhtDownAngle = std::make_pair(i, j);
+            Position current = queue.front();
+            queue.pop();
+            if(current.x + current.y > ringhtDownAngle.first + ringhtDownAngle.second)
+            {
+                ringhtDownAngle = std::make_pair(current.x, current.y);
+            }
+            if(current.x + current.y < leftUpAngle.first + leftUpAngle.second)
+            {
+                leftUpAngle = std::make_pair(current.x, current.y);
+            }
+            for(int deltaX = -deviationX; deltaX <= deviationX; deltaX++)
+            {
+                for(int deltaY = -deviationY; deltaY <= deviationY; deltaY++)
+                {
+                    int newX = current.x + deltaX;
+                    int newY = current.y + deltaY;
+
+                    if(inTable(newX, newY) && goodColor(newX, newY) && free(newX, newY))
+                    {
+                        into_mark(newX, newY);
+                        queue.push(Position(newX, newY));
+                    }
+                }
+            }
         }
-        if(i + j < leftUpAngle.first + leftUpAngle.second)
-        {
-            leftUpAngle = std::make_pair(i, j);
-        }
+    }
+
+    void into_mark(int i, int j)
+    {
         for(int numberColor = 0; numberColor < 3; numberColor++)
         {
             mark.at<cv::Vec3b>(i, j)[numberColor] = maxValueColor;
-        }
-        for(int deltaX = -deviationX; deltaX <= deviationX; deltaX++)
-        {
-            for(int deltaY = -deviationY; deltaY <= deviationY; deltaY++)
-            {
-                if(inTable(i + deltaX, j + deltaY) && goodColor(i + deltaX, j + deltaY) && free(i + deltaX, j + deltaY))
-                {
-                    dfs(i + deltaX, j + deltaY, leftUpAngle, ringhtDownAngle);
-                }
-            }
         }
     }
 
@@ -104,7 +132,7 @@ private:
 
 class DrawRectangles {
 public:
-    DrawRectangles(cv::Mat matrix)
+    DrawRectangles(const cv::Mat& matrix)
     {
         matrix.copyTo(picture);
     }
@@ -121,6 +149,34 @@ public:
            sprintf(name, "%d", i);
            cv::putText(answer, std::string(name), cvPoint(rectangles[i].x, rectangles[i].y + rectangles[i].height/2),
                         cv::FONT_HERSHEY_COMPLEX, 1, colorText, 2);
+        }
+        return answer;
+    }
+private:
+    cv::Mat picture;
+    static const int maxSize = 200;
+};
+
+class DrawPoints {
+public:
+    DrawPoints(const cv::Mat& matrix)
+    {
+        matrix.copyTo(picture);
+    }
+
+    cv::Mat draw(const std::vector<cv::Point>& points, cv::Scalar colorPoints = CV_RGB(255, 0, 0),
+                         cv::Scalar colorText = CV_RGB(255, 0, 0))
+    {
+        cv::Mat answer;
+        picture.copyTo(answer);
+
+        for(int i = 0; i < points.size(); i++)
+        {
+            cv::circle(answer, points[i], 1, colorPoints, -1);
+            char name[maxSize];
+            sprintf(name, "%d", i);
+            cv::putText(answer, std::string(name), points[i],
+                        cv::FONT_HERSHEY_COMPLEX, 1, colorText, 1);
         }
         return answer;
     }

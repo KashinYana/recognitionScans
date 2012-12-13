@@ -9,18 +9,18 @@
 
 int main(int argc, char* argv[])
 {
-    char filename[] = "scan.jpg";
+    char filename[] = "test-color.jpg";
     IplImage* image = cvLoadImage(filename);
     cv::Mat mtx(image);
     cvNamedWindow("image");
     cvShowImage("image", image);
 
-    FindRectangles find(mtx, 0, 0, 255);    // Blue
+    FindRectangles find(mtx, 255, 0, 0);    // Red
 
     std::vector<cv::Rect_<int> > rectangles = find.find();
 
-    find.wrireNumbers(rectangles).copyTo(mtx);
-
+    DrawRectangles draw(mtx);
+    draw.draw(rectangles).copyTo(mtx);
     cvNamedWindow("whiteBlackImage");
 
     IplImage img ((IplImage)mtx);

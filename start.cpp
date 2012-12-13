@@ -1,6 +1,7 @@
-#include "tresholding/thresholding.h"
+#include "thresholding/thresholding.hpp"
 #include "findRectangles/findRectangles.h"
 #include "config/config.hpp"
+#include "images/image.hpp"
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -26,14 +27,13 @@ void writeRectanglesInConfig(const std::vector<cv::Rect_<int> >& rectangles, Con
 
 std::vector<cv::Rect_<int> > findRectangles(const std::string& fileName, int red, int green, int blue, std::string& namePaintPicture)
 {
-    IplImage* image = cvLoadImage(fileName.c_str());
-    cv::Mat matrix(image);
+    cv::Mat matrix = Image::read(fileName);
     FindRectangles find(matrix, red, green, blue);
+	Image::show(matrix);
     std::vector<cv::Rect_<int> > rectangles = find.find();
     DrawRectangles draw(matrix);
     draw.draw(rectangles).copyTo(matrix);
     imwrite(namePaintPicture, matrix);
-    cvReleaseImage(&image);
     return rectangles;
 }
 

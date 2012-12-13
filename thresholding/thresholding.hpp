@@ -22,6 +22,7 @@ public:
     : matrix(matrix_), middleValue(128), minValue(0), maxValue(255),
     upperBound(245), downBound(15), numberColors(3)
     {
+//		cvtColor(matrix_, matrix, CV_RGB2GRAY);
         shift = shift_;
         resizePartialSum();
         initPartialSum();

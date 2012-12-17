@@ -1,7 +1,6 @@
-#include "tresholding/thresholding.h"
-#include "findRectangles/findRectangles.h"
-#include "config/config.hpp"
-#include "images/image.hpp"
+#include "../findRectangles/findRectangles.h"
+#include "../config/config.hpp"
+#include "../images/image.hpp"
 
 
 #include <opencv2/opencv.hpp>
@@ -12,10 +11,39 @@
 #include <stdlib.h>
 #include <assert.h>
 
+
+class Color {
+public:
+    int red;
+    int green;
+    int blue;
+    Color(int red_, int green_, int blue_)
+    {
+        red = red_;
+        blue = blue_;
+        green = green_;
+    }
+    Color(Config::Section section)
+    {
+        assert(section["red"].size() == 1);
+        for (std::string property: section["red"]) {
+			red = util::StrToInt(property);
+		}
+		assert(section["green"].size() == 1);
+		for (std::string property: section["green"]) {
+			green = util::StrToInt(property);
+		}
+		assert(section["blue"].size() == 1);
+		for (std::string property: section["blue"]) {
+			blue = util::StrToInt(property);
+		}
+    }
+};
+
 std::vector<cv::Rect_<int> > readRectangles(Config& config)
 {
     std::vector<cv::Rect_<int> >rectangles;
-    for (Config::Section section: config["rectangle"]) {
+    for (Config::Section section: config["input_field"]) {
         int x, y, width, height;
         for (std::string property: section["x"]) {
 			x = util::StrToInt(property);
@@ -48,16 +76,16 @@ std::vector<cv::Point> readPoints(Config& config)
     return points;
 }
 
-void drawRectangles(const std::vector<cv::Rect_<int> >& rectangles, cv::Mat picture)
+void drawRectangles(const std::vector<cv::Rect_<int> >& rectangles, cv::Mat picture, const Color& color)
 {
     DrawRectangles draw(picture);
-    draw.draw(rectangles).copyTo(picture);
+    draw.draw(rectangles, CV_RGB(color.red, color.green, color.blue),  CV_RGB(color.red, color.green, color.blue)).copyTo(picture);
 }
 
-void drawPoints(const std::vector<cv::Point>& points, cv::Mat picture)
+void drawPoints(const std::vector<cv::Point>& points, cv::Mat picture, const Color& color)
 {
     DrawPoints draw(picture);
-    draw.draw(points).copyTo(picture);
+    draw.draw(points, CV_RGB(color.red, color.green, color.blue),  CV_RGB(color.red, color.green, color.blue)).copyTo(picture);
 }
 
 int main()
@@ -71,6 +99,9 @@ int main()
     Config configData = Config::parse(nameConfigResult);
     Config config = Config::parse(nameMainConfig);
 
+    Color markRectangles(*config["color_mark_rectangles"].begin());
+    Color markPoints(*config["color_mark_anchors"].begin());
+
     std::string original;
     for (Config::Section section: config["original"]) {
         assert(section["name_file"].size() == 1);
@@ -83,9 +114,9 @@ int main()
     origalPicture.copyTo(repaintPicture);
 
     std::vector<cv::Rect_<int> > rectangles = readRectangles(configData);
-    drawRectangles(rectangles, repaintPicture);
+    drawRectangles(rectangles, repaintPicture, markRectangles);
     std::vector<cv::Point> points = readPoints(configData);
-    drawPoints(points, repaintPicture);
+    drawPoints(points, repaintPicture, markPoints);
 
     imwrite(namePaintPicture, repaintPicture);
 
@@ -99,4 +130,5 @@ int main()
     std::cout << "If you change results, don't forget execute \"" + nameRepaintingFile + "\"." << std::endl;
     return 0;
 }
+
 

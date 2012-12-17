@@ -1,8 +1,7 @@
-#include "tresholding/thresholding.h"
-#include "images/image.hpp"
-#include "findRectangles/findRectangles.h"
-#include "config/config.hpp"
-#include "rotate/anchor_finder.hpp"
+#include "../images/image.hpp"
+#include "../findRectangles/findRectangles.h"
+#include "../config/config.hpp"
+#include "../rotate/anchor_finder.hpp"
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -10,6 +9,34 @@
 #include <vector>
 #include <stdlib.h>
 #include <assert.h>
+
+class Color {
+public:
+    int red;
+    int green;
+    int blue;
+    Color(int red_, int green_, int blue_)
+    {
+        red = red_;
+        blue = blue_;
+        green = green_;
+    }
+    Color(Config::Section section)
+    {
+        assert(section["red"].size() == 1);
+        for (std::string property: section["red"]) {
+			red = util::StrToInt(property);
+		}
+		assert(section["green"].size() == 1);
+		for (std::string property: section["green"]) {
+			green = util::StrToInt(property);
+		}
+		assert(section["blue"].size() == 1);
+		for (std::string property: section["blue"]) {
+			blue = util::StrToInt(property);
+		}
+    }
+};
 
 void writeRectanglesInConfig(const std::vector<cv::Rect_<int> >& rectangles, Config& config)
 {
@@ -20,7 +47,7 @@ void writeRectanglesInConfig(const std::vector<cv::Rect_<int> >& rectangles, Con
         section.add("y", util::IntToStr(rectangles[i].y));
         section.add("width", util::IntToStr(rectangles[i].width));
         section.add("height", util::IntToStr(rectangles[i].height));
-        config.add("rectangle", section);
+        config.add("input_field", section);
     }
 }
 
@@ -41,10 +68,10 @@ void writeSizeInConfig(const cv::Mat& matrix, Config& config)
     config.add("model_image", section);
 }
 
-std::vector<cv::Rect_<int> > findRectangles(const std::string& fileName, int red, int green, int blue)
+std::vector<cv::Rect_<int> > findRectangles(const std::string& fileName, const Color& color)
 {
     cv::Mat matrix = Image::read(fileName);
-    FindRectangles find(matrix, red, green, blue);
+    FindRectangles find(matrix, color.red, color.green, color.blue);
     std::vector<cv::Rect_<int> > rectangles = find.find();
     return rectangles;
 }
@@ -57,16 +84,16 @@ std::vector<cv::Point> findPoints(const Config& config, const cv::Mat& image, co
     return positions;
 }
 
-void drawRectangles(const std::vector<cv::Rect_<int> >& rectangles, cv::Mat& result)
+void drawRectangles(const std::vector<cv::Rect_<int> >& rectangles, cv::Mat& result, const Color& color)
 {
     DrawRectangles draw(result);
-    draw.draw(rectangles,  CV_RGB(128, 128, 128),  CV_RGB(128, 128, 128)).copyTo(result);  /// подумать о цветах
+    draw.draw(rectangles, CV_RGB(color.red, color.green, color.blue),  CV_RGB(color.red, color.green, color.blue)).copyTo(result);
 }
 
-void drawPoints(const std::vector<cv::Point>& points, cv::Mat& result)
+void drawPoints(const std::vector<cv::Point>& points, cv::Mat& result, const Color& color)
 {
     DrawPoints draw(result);
-    draw.draw(points,  CV_RGB(128, 128, 128),  CV_RGB(128, 128, 128)).copyTo(result);  /// подумать о цветах
+    draw.draw(points, CV_RGB(color.red, color.green, color.blue),  CV_RGB(color.red, color.green, color.blue)).copyTo(result);
 }
 
 int main()
@@ -98,21 +125,9 @@ int main()
 			original = property;
 		}
     }
-    int red, green, blue;
-    for (Config::Section section: config["color_rectangles"]) {
-        assert(section["red"].size() == 1);
-        for (std::string property: section["red"]) {
-			red = util::StrToInt(property);
-		}
-		assert(section["green"].size() == 1);
-		for (std::string property: section["green"]) {
-			green = util::StrToInt(property);
-		}
-		assert(section["blue"].size() == 1);
-		for (std::string property: section["blue"]) {
-			blue = util::StrToInt(property);
-		}
-    }
+    Color inputRectangles(*config["color_rectangles"].begin());
+    Color markRectangles(*config["color_mark_rectangles"].begin());
+    Color markPoints(*config["color_mark_anchors"].begin());
 
     cv::Mat matrixOriginal = Image::read(original);
     cv::Mat matrixAnchors = Image::read(anchors);
@@ -120,13 +135,13 @@ int main()
     matrixOriginal.copyTo(paintPicture);
     Config configFindData;
 
-    std::vector<cv::Rect_<int> > rectangles = findRectangles(original, red, green, blue);
-    drawRectangles(rectangles, paintPicture);
+    std::vector<cv::Rect_<int> > rectangles = findRectangles(original, inputRectangles);
+    drawRectangles(rectangles, paintPicture, markRectangles);
     writeRectanglesInConfig(rectangles, configFindData);
     std::vector<cv::Point> positions = findPoints(config, matrixOriginal, matrixAnchors, numberAnchors);
     writePointsInConfig(positions, configFindData);
 
-    drawPoints(positions, paintPicture);
+    drawPoints(positions, paintPicture, markPoints);
     imwrite(namePaintPicture, paintPicture);
     writeSizeInConfig(matrixOriginal, configFindData);
     configFindData.write(nameConfigResult);

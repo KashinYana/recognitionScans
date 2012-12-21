@@ -1,26 +1,42 @@
-#ifndef SPLITTER_H_
-#define SPLITTER_H_
+#ifndef __SPLITTER_H__
+#define __SPLITTER_H__
 
 #include "../config/config.hpp"
 #include "../images/image.hpp"
 #include "../util/util.hpp"
+#include "interesting_object.hpp"
 
 class Splitter {
   private:
 	Config config;
-  public:
-	Splitter(Config cfg): config(cfg) {
+	int oldX;
+	int oldY;
+	
+	int getRealX(int x, cv::Size size) {
+		return round(x / (double) oldX * size.width);
 	}
 
-	std::vector<cv::Mat> split(const cv::Mat& image) {  
-		std::vector<cv::Mat> result;
+	int getRealY(int y, cv::Size size) {
+		return round(y / (double) oldY * size.height);
+	}
+
+  public:
+	Splitter(Config cfg): config(cfg) {
+		std::pair<int,int> size = util::StrToPair(config.getSection("model_image").getProperty("size"));
+		oldX = size.first;
+		oldY = size.second;
+	}
+
+	std::vector<InterestingObject> split(const cv::Mat& image) {  
+		std::vector<InterestingObject> result;
 		for (Config::Section section: config["input_field"]) {
-			int x = util::StrToInt(section.getProperty("x"));
-			int y = util::StrToInt(section.getProperty("y"));
-			int width = util::StrToInt(section.getProperty("width"));
-			int heigth = util::StrToInt(section.getProperty("heigth"));
-			cv::Mat current = image.rowRange(y, y + heigth).colRange(x, x + width).clone();
-			result.push_back(current);
+			InterestingObject piece;
+			piece.x = getRealX(util::StrToInt(section.getProperty("x")), image.size());
+			piece.y = getRealY(util::StrToInt(section.getProperty("y")), image.size());
+			piece.width = getRealX(util::StrToInt(section.getProperty("width")), image.size());
+			piece.height = getRealY(util::StrToInt(section.getProperty("height")), image.size());
+			piece.image = image.rowRange(piece.y, piece.y + piece.height).colRange(piece.x, piece.x + piece.width).clone();
+			result.push_back(piece);
 		}
 		return result;
 	}

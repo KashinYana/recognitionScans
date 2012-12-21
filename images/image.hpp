@@ -21,10 +21,30 @@ namespace Image {
 		return readImage(fileName);
 	}
 
-	void show(const Image& image) {
+	void write(const std::string& fileName, cv::Mat image) {
+		cv::imwrite(fileName, image);
+	}
+
+	int show(const Image& image) {
 		cv::namedWindow("window", CV_WINDOW_NORMAL);
 		cv::imshow("window", image);
-		cv::waitKey();
+		return cv::waitKey();
+	}
+
+	cv::Mat makeBlackAndWhite(cv::Mat image) {
+		cv::Mat result(image.rows, image.cols, CV_8UC1);
+		cvtColor(image, result, CV_RGB2GRAY);
+		return result;
+	}
+
+	cv::Mat copy(cv::Mat image) {
+		cv::Mat result;
+		image.copyTo(result);
+		return result;
+	}
+
+	cv::Mat getSubMatrix(cv::Mat image, int x, int y, int width, int height) {
+		return image.rowRange(y, y + height).colRange(x, x + width).clone();
 	}
 }
 

@@ -30,11 +30,16 @@ private:
 	struct AnchorConfig {
 		int maxAcceptedPixelDeviation; 
 	};
+	
 	AnchorConfig config;
 
 public:
 	AnchorFinder(Config cfg) {
-		config.maxAcceptedPixelDeviation = util::StrToInt(cfg.getSection("anchor_finder").getProperty("max_pixel_deviation"));
+		try {
+			config.maxAcceptedPixelDeviation = util::StrToInt(cfg.getSection("anchor_finder").getProperty("max_pixel_deviation"));
+		} catch (std::exception e) {
+			config.maxAcceptedPixelDeviation = 200000;
+		}
 	}
 	
 	std::vector<cv::Point> find(cv::Mat image, cv::Mat anchor, int count)	

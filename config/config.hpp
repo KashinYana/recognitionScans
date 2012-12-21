@@ -75,6 +75,7 @@ class Config {
 				};
 			public:
 				typedef std::multimap<std::string, std::string>::iterator iterator;
+				typedef std::multimap<std::string, std::string>::const_iterator const_iterator;
 				std::string& getProperty(const std::string& valueName) {
 					iterator beginIt = properties.lower_bound(valueName);					
 					iterator endIt = properties.upper_bound(valueName);					
@@ -88,6 +89,16 @@ class Config {
 						//ToDo: logger
 					}
 					return beginIt->second;
+				}
+				int count(const std::string& valueName) const {
+					const_iterator it = properties.lower_bound(valueName);					
+					const_iterator endIt = properties.upper_bound(valueName);					
+					int answer = 0;
+					while (it != endIt) {
+						answer ++;
+						it ++;
+					}
+					return answer;
 				}
 				bool hasProperty(const std::string& propertyName) const {
 					return propertyNames.find(propertyName) != propertyNames.end();
@@ -264,6 +275,9 @@ class Config {
 		
 		void write(const std::string& fileName) {
 			std::ofstream fout(fileName.c_str(), std::ofstream::out);
+			if (fout.fail()) {
+				throw std::invalid_argument("Failed to write into file " + fileName);
+			}
 			bool haveToPrintEoln = false;
 			for (Section section: ConfigSlice(*this, "")) {
 				for (Section::iterator it = section.begin(); it != section.end(); it ++) {

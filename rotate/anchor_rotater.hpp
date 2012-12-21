@@ -52,9 +52,11 @@ private:
 
 	struct Anchor {
 		cv::Mat image;
-		int count;
 		std::vector<cv::Point> positions;
-		Anchor(cv::Mat img, int cnt, const std::vector<cv::Point>& p): image(img), count(cnt), positions(p) {
+		Anchor(cv::Mat img, const std::vector<cv::Point>& p): image(img), positions(p) {
+		}
+		int getCount() {
+			return positions.size();
 		}
 	};
 
@@ -66,14 +68,7 @@ private:
 				std::pair<int,int> pair = util::StrToPair(value);
 				positions.push_back(cv::Point(pair.first, pair.second));
 			}
-			if (section.hasProperty("count")) {
-				result.push_back(Anchor(Image::readImage(section.getProperty("file")), 
-							util::StrToInt(section.getProperty("count")), 
-							positions
-							));
-			} else {
-				result.push_back(Anchor(Image::readImage(section.getProperty("file")), 1, positions));
-			}
+			result.push_back(Anchor(Image::readImage(section.getProperty("file")), positions));
 		}		
 		return result;
 	}
@@ -99,20 +94,24 @@ public:
 		const int baseAnchors = 3;
 		if (anchors.size() < 1)
 			throw std::invalid_argument("There should be at least 1 anchor");
-		if (anchors[0].count != baseAnchors)
+		if (anchors[0].getCount() != baseAnchors)
 			throw std::invalid_argument("Base anchor used as base one, he should have at least 3 positions");
 		std::vector<cv::Point> initialPoints(baseAnchors);	
 		std::vector<cv::Point> finalPoints(baseAnchors);
 		initialPoints = anchorFinder.find(image, anchors[0].image, baseAnchors);
 		int index = 0;
-		for (int i = 0; i < baseAnchors; i ++)
-			finalPoints[i] = anchors[0].positions[i];
+		cv::Size oldSize = getSize();
+		for (int i = 0; i < baseAnchors; i ++) {
+//			finalPoints[i] = anchors[0].positions[i];
+			finalPoints[i].x = round(anchors[0].positions[i].x / (double) oldSize.width * image.size().width);
+			finalPoints[i].y = round(anchors[0].positions[i].y / (double) oldSize.height * image.size().height);
+		}
 		normalizeDistance(initialPoints);
 		normalizeDistance(finalPoints);
 		cv::Mat transformMatrix = cv::getAffineTransform(convertVector(initialPoints), convertVector(finalPoints));
 		cv::Mat result;
 		cv::Scalar WHITE_COLOR = cv::Scalar(255, 255, 255);
-		cv::warpAffine(image, result, transformMatrix, getSize(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, WHITE_COLOR);
+		cv::warpAffine(image, result, transformMatrix, image.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, WHITE_COLOR);
 		return result;	
 	}
 

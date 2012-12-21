@@ -25,13 +25,20 @@ private:
 		std::ifstream fin(file);
 		while (!fin.eof() && !fin.fail()) {
 			cv::Mat image(IMAGE_SIZE, IMAGE_SIZE, CV_8UC1);
+			bool fail = false;
 			for (int i = 0; i < IMAGE_SIZE; i ++) {
 				for (int j = 0; j < IMAGE_SIZE; j ++) {
-					image.at<uchar>(i,j) = (uchar) 255 - (uchar)fin.get();
+					unsigned int c = (uchar) fin.get();					
+					if (c == -1) {
+						fail = true;
+					}
+					image.at<uchar>(i,j) = (uchar) 255 - c;					
 				}
 			}
-			train_input.push_back(ImageProcessor(image).process(IMAGE_SIZE));
-			train_answer.push_back(value);
+			if (!fail) {
+				train_input.push_back(ImageProcessor(image).process(IMAGE_SIZE));
+				train_answer.push_back(value);
+			}
 		}
 	}
 

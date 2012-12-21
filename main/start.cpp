@@ -51,13 +51,14 @@ void writeRectanglesInConfig(const std::vector<cv::Rect_<int> >& rectangles, Con
     }
 }
 
-void writePointsInConfig(std::vector<cv::Point>& positions, Config& config)
+void writePointsInConfig(std::vector<cv::Point>& positions, Config& config, const std::string& nameFile)
 {
     Config::Section section;
     for(int i = 0; i < positions.size(); i++)
     {
         section.add("position", "(" + util::IntToStr(positions[i].x) + ", " + util::IntToStr(positions[i].y) + ")");
     }
+    section.add("file", nameFile);
     config.add("anchor", section);
 }
 
@@ -139,7 +140,7 @@ int main()
     drawRectangles(rectangles, paintPicture, markRectangles);
     writeRectanglesInConfig(rectangles, configFindData);
     std::vector<cv::Point> positions = findPoints(config, matrixOriginal, matrixAnchors, numberAnchors);
-    writePointsInConfig(positions, configFindData);
+    writePointsInConfig(positions, configFindData, anchors);
 
     drawPoints(positions, paintPicture, markPoints);
     imwrite(namePaintPicture, paintPicture);
